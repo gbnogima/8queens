@@ -4,11 +4,11 @@
 
 #define N 8
 #define NUM_SOLUTIONS 8
-#define NUM_PARENTS 2
+#define NUM_PARENTS 3  
 #define NUM_OFFSPRING 8
 
 
-int min_attacks = 99999999; 
+int min_attacks = 9999; 
 
 void print_matrix(int arr[N][N]) 
 { 
@@ -40,17 +40,22 @@ void bldarray (int randN[])
 
 //Coloca as damas no tabuleiro, com base no vetor aleatório gerado anteriormente
 void initialize_population(int matrix[N][N], int arr[]){
-   int i;
-   for (int i = 0; i < N; i++) {
+   int i, j;
+   for (i = 0; i < N; i++){
+      for (j = 0; j < N; j++){
+         matrix[i][j] = 0;
+      }
+   }
+   for (i = 0; i < N; i++) {
       matrix[i][arr[i]] = 1;
    }
 }
 
 
-int count_num_attacks(int board[N][N]){
+int count_num_attacks(int board[N][N], int index, int *best_idx){
    int i, j; 
    int num_attacks = 0;
-   int count;
+   int count, count1, count2, count3, count4;
 
    //percorrendo as colunas
    for (i = 0; i < N; i++){
@@ -63,25 +68,41 @@ int count_num_attacks(int board[N][N]){
       }
    }
 
-   // for(i = 0; i < N ; ++i){
-   //    count = 0;
+   //percorrendo as diagonais
+   count = 0;
+   for (i = 0; i < N; i++){
+      count1 += board[i][i];
+      count2 += board[N-1-i][i];
+   }
+   if(count1 > 0)
+      num_attacks += (count1-1);
+   
 
-   //    for(j = 0; j < N - i; ++j){
-   //       count += board[j][i];
-   //    }
-   //    if(count > 0)
-   //       num_attacks += (count-1);
 
-   //    if(i!=0){
-   //       for(j = 0; j < N - i; ++j){
-   //          count += board[j][i];
-   //       }
-   //       if(count > 0)
-   //          num_attacks += (count-1);
-   //    }
-   // }
+   for(i = 1; i < N; i++){
+      count1 = 0;
+      count2 = 0;
+      count3 = 0;
+      count4 = 0;
+      for(j = 0; j < N - i; j++){
+         count1 += board[j+i][j];
+         count2 += board[j][j+i];
+         count3 += board[N-j-i][j];
+         count4 += board[N-1-j][j+i];
+      }
+      if(count1 > 0)
+         num_attacks += (count1-1);
+      if(count2 > 0)
+         num_attacks += (count2-1);
+      if(count3 > 0)
+         num_attacks += (count3-1);
+      if(count4 > 0)
+         num_attacks += (count4-1);
+   }
+
    if(num_attacks < min_attacks){
       min_attacks = num_attacks;
+      *best_idx = index;
    }
    return num_attacks;
 }
@@ -101,11 +122,10 @@ void select_mating_pool(int parents_idx[NUM_PARENTS], double fitness[NUM_SOLUTIO
       }
       fitness[max_idx] = -1;
       parents_idx[i] = max_idx;
-      //printf("%d ", max_idx);  
+
       for (int k = 0; k < N; k++){
          mating_pool[i][k] = pop[max_idx][k];
       }
-      
    }
 }
 
@@ -131,12 +151,16 @@ void mutation(int genes[N]){
 int main() 
 { 
    int i;
-   int board[NUM_SOLUTIONS][N][N] = {0}; // 
+   int board[NUM_SOLUTIONS][N][N]; // 
    srand (time(0));   
      
    int pop_1d[NUM_SOLUTIONS][N];
    double fitness[NUM_SOLUTIONS];
    int parents_idx[NUM_PARENTS];
+
+   int mating_pool[NUM_PARENTS][N];
+   int idx1, idx2;
+   int best_idx;
 
 
    for (i = 0; i < NUM_SOLUTIONS; i++)
@@ -147,9 +171,10 @@ int main()
        print_array(pop_1d[i], N);
     printf("\n");
 
-   // for (i = 0; i < NUM_SOLUTIONS; i++)
-   //    initialize_population(board[i], pop_1d[i]);
+   for (i = 0; i < NUM_SOLUTIONS; i++)
+      initialize_population(board[i], pop_1d[i]);
 
+   // printf("Board: \n");
    // for (int i = 0; i < NUM_SOLUTIONS; i++)
    //    print_matrix(board[i]); 
 
@@ -158,24 +183,22 @@ int main()
       for (i = 0; i < NUM_SOLUTIONS; i++)
          initialize_population(board[i], pop_1d[i]);
 
+      //printf("Fitness: \n");
       for (i = 0; i < NUM_SOLUTIONS; i++){
-         fitness[i] = (double)1 / (double)(count_num_attacks(board[i]));
+         fitness[i] = (double)1 / (double)(count_num_attacks(board[i], i, &best_idx));
          //printf("%f\n", fitness[i]);
       }
-      
-      int mating_pool[NUM_PARENTS][N];
 
-      //printf("Idxs: \n");
+      if(min_attacks == 0)
+         break;
+      
       select_mating_pool(parents_idx, fitness, mating_pool, pop_1d);
-      //printf("\n\n");
 
       // printf("Mating pool:\n");
       // for (i = 0; i < NUM_PARENTS; i++)
       //    print_array(mating_pool[i], N);
       // printf("\n");
-
-      
-      int idx1, idx2;
+       
       for (i = 0; i < NUM_OFFSPRING; i++){
          idx1 = rand()%NUM_PARENTS;
          idx2 = rand()%NUM_PARENTS;
@@ -192,11 +215,23 @@ int main()
       //    print_array(pop_1d[i], N);
       // printf("\n");
 
-      //printf("%d\n", min_attacks);
+      // printf("Min attacks: %d\n", min_attacks);
 
-      //getchar();
+      // getchar();
    }
-   printf("%d\n", min_attacks);
+
+   // printf("Population: \n");
+   //    for (i = 0; i < NUM_SOLUTIONS; i++)
+   //       print_array(pop_1d[i], N);
+   //    printf("\n");
+
+   // printf("Board: \n");
+   // for (i = 0; i < NUM_SOLUTIONS; i++)
+   //    print_matrix(board[i]); 
+
+   printf("Best: \n");
+   print_matrix(board[best_idx]);
+
 
 
 
