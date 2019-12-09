@@ -13,12 +13,13 @@ int min_attacks = 9999;
 void print_matrix(int arr[N][N]) 
 { 
    int i, j; 
+   printf("------------------------\n");
    for (i = 0; i < N; i++){
       for (j = 0; j < N; j++) 
-         printf("%d ", arr[i][j]); 
+         printf(" %d ", arr[i][j]); 
       printf("\n");
    }
-   printf("\n");
+   printf("------------------------\n");
 } 
 
 void print_array(int arr[], int n)
@@ -70,6 +71,8 @@ int count_num_attacks(int board[N][N], int index, int *best_idx){
 
    //percorrendo as diagonais
    count = 0;
+   count1 = 0;
+   count2 = 0;
    for (i = 0; i < N; i++){
       count1 += board[i][i];
       count2 += board[N-1-i][i];
@@ -131,7 +134,6 @@ void select_mating_pool(int parents_idx[NUM_PARENTS], double fitness[NUM_SOLUTIO
 
 void crossover(int parent1[], int parent2[], int child[]){
    int mid = rand() % N;
-   int i;
    for (int i = 0; i < N; i++){
       if(i > mid){
          child[i] = parent1[i];
@@ -143,8 +145,11 @@ void crossover(int parent1[], int parent2[], int child[]){
 }
 
 void mutation(int genes[N]){
-   if((rand()%100) < 10){
-      bldarray(genes);
+   for (int i = 0; i < N; i++)
+   {
+       if((rand()%100) < 10){
+          genes[i] = rand()%N;
+       }
    }
 }
   
@@ -162,6 +167,7 @@ int main()
    int idx1, idx2;
    int best_idx;
 
+   int num_gen = 1;
 
    for (i = 0; i < NUM_SOLUTIONS; i++)
       bldarray(pop_1d[i]);
@@ -180,18 +186,24 @@ int main()
 
 
    while(min_attacks != 0){
+      printf("-------------------------\n|  Generation %d    \n-------------------------\n\n", num_gen);
       for (i = 0; i < NUM_SOLUTIONS; i++)
          initialize_population(board[i], pop_1d[i]);
 
-      //printf("Fitness: \n");
+      printf("Fitness: ");
       for (i = 0; i < NUM_SOLUTIONS; i++){
-         fitness[i] = (double)1 / (double)(count_num_attacks(board[i], i, &best_idx));
-         //printf("%f\n", fitness[i]);
+         fitness[i] = (double)1 / (double)(1 + count_num_attacks(board[i], i, &best_idx));
+         printf("%f ", fitness[i]);
       }
+      printf("\n");
+      printf("Min attacks: %d\n\n", min_attacks);
 
       if(min_attacks == 0)
+      {
+         printf("The goal was reached!\n\n");
          break;
-      
+      }
+
       select_mating_pool(parents_idx, fitness, mating_pool, pop_1d);
 
       // printf("Mating pool:\n");
@@ -209,13 +221,14 @@ int main()
          mutation(pop_1d[i]);
 
       }
+      
+      num_gen++;
 
       // printf("Population: \n");
       // for (int i = 0; i < NUM_SOLUTIONS; i++)
       //    print_array(pop_1d[i], N);
       // printf("\n");
 
-      // printf("Min attacks: %d\n", min_attacks);
 
       // getchar();
    }
@@ -229,7 +242,7 @@ int main()
    // for (i = 0; i < NUM_SOLUTIONS; i++)
    //    print_matrix(board[i]); 
 
-   printf("Best: \n");
+   printf("Best solution found: \n");
    print_matrix(board[best_idx]);
 
 
